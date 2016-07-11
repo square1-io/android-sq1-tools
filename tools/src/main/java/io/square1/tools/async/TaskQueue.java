@@ -8,6 +8,7 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import java.util.HashMap;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -126,14 +127,6 @@ public class TaskQueue {
         }
     }
 
-    public boolean clearObserver(TaskObserver observer, int taskId){
-        final TaskObserver ob = mTasksObserver.get(taskId);
-        if(ob == observer){
-            mTasksObserver.remove(taskId);
-            return true;
-        }
-        return false;
-    }
 
     private ObservedTask getObservedTask(TaskObserver observer){
 
@@ -153,20 +146,24 @@ public class TaskQueue {
 
 
     public boolean clearObserver(TaskObserver observer) {
-        boolean success = false;
-        //remove all the bindings between this observer and the running tasks
-        //TODO should add a map rather than looping
-        //TODO should also cancel stray tasks ??
-        int initialIndex = mTasksObserver.size() - 1;
-        for(int index = initialIndex ; index >= 0 ; index --){
-            TaskObserver ob = mTasksObserver.valueAt(index);
-            if(ob == observer){
-                success = true;
-                mTasksObserver.removeAt(index);
+
+        if(observer == null) {
+            return false;
+        }
+
+        ObservedTask observedTask = mObservedTask.remove(observer);
+
+        if(observedTask != null &&
+                observedTask.isEmpty() == false) {
+
+            Set<Integer> taskIds = observedTask.taskIds();
+            for(Integer id : taskIds){
+                cancel(id);
             }
         }
 
-        return success;
+        return false;
+
     }
 
     private TaskObserver getObserverForTask(final Task task, boolean remove){

@@ -1,6 +1,7 @@
 package io.square1.tools.async;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -27,6 +28,10 @@ public class ObservedTask {
 
     public boolean isEmpty(){
         return mTasks.isEmpty();
+    }
+
+    public Set<Integer> taskIds(){
+        return mTasks;
     }
 
 }

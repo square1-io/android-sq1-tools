@@ -8,9 +8,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.json.JSONObject;
+
 import io.square1.tools.async.Task;
 import io.square1.tools.async.TaskObserver;
 import io.square1.tools.async.TaskQueue;
+import io.square1.tools.http.HttpTask;
 
 public class MainActivity extends AppCompatActivity implements TaskObserver {
 
@@ -113,9 +116,9 @@ public class MainActivity extends AppCompatActivity implements TaskObserver {
         mQueue = new TaskQueue(this);
 
         //this will block any other till it finishes
-        mBlockingTaskId = mQueue.addTask( new BlockingTask(), this, null, true);
+       // mBlockingTaskId = mQueue.addTask( new BlockingTask(), this, null, true);
 
-       mCountingTaskId = mQueue.addTask( new TaskCount(), this);
+     //  mCountingTaskId = mQueue.addTask( new TaskCount(), this);
 
         mCancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -124,9 +127,23 @@ public class MainActivity extends AppCompatActivity implements TaskObserver {
             }
         });
 
+        HttpTask<JSONObject> jsonObjectHttpTask = new HttpTask
+                .Builder(HttpTask.Method.GET)
+                .setScheme("http")
+                .setAuthority("jsonplaceholder.typicode.com")
+                .appendPath("posts")
+                .appendPath("1")
+                .buildAsJSON();
 
+        mQueue.addTask(jsonObjectHttpTask, this);
     }
 
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+        mQueue.clearObserver(this);
+
+    }
 
     @Override
     public boolean observerHasLeft() {

@@ -25,10 +25,6 @@ public abstract class Task<T> implements Runnable {
     private static final String ARG_RESULT_CODE = "TASK_ARG_RESULT_CODE";
     private static final String ARG_DATA = "TASK_ARG_DATA";
 
-    /**
-     * this is set to indicate that the queue is blocked until this tasks either completed, is cancelled or fails.
-     */
-    private boolean mBlockingTask;
 
     public static int taskId(Bundle bundle){
         return bundle.getInt(ARG_ID);
@@ -67,7 +63,6 @@ public abstract class Task<T> implements Runnable {
     private AtomicBoolean mCanceled = new AtomicBoolean(false);
 
    public Task(){
-       mBlockingTask = false;
        mParams = new Bundle();
     }
 
@@ -87,14 +82,6 @@ public abstract class Task<T> implements Runnable {
 
     protected void setData(Parcelable data){
         mParams.putParcelable(ARG_DATA,data);
-    }
-
-    public void setBlockingTask(){
-        mBlockingTask = true;
-    }
-
-    public final boolean isBlockingTask(){
-        return mBlockingTask;
     }
 
 
@@ -232,7 +219,6 @@ public abstract class Task<T> implements Runnable {
         }
     }
 
-
     @Override
     public void run() {
 
@@ -253,7 +239,7 @@ public abstract class Task<T> implements Runnable {
             mLastException = exc;
         }
         //we always expect a non null result
-        if(mResult == null){
+        if(mResult == null && mLastException == null){
             mLastException = new TaskException(this);
         }
         updateState(STATE_FINISHED);
@@ -269,7 +255,7 @@ public abstract class Task<T> implements Runnable {
     @Override
     public String toString() {
 
-        String tmp = "taskId: "+mTaskId;
+        String tmp = "taskId: " + mTaskId;
         return TextUtils.substring(tmp,0,tmp.length() > 40
                 ? 40 :
                 tmp.length()  ) ;

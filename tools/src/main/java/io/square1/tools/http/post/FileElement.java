@@ -11,7 +11,6 @@ public class FileElement implements MultipartElement {
         private String mName;
         private File mFile;
 
-
         public FileElement(String name, File file) {
             mName = name;
             mFile = file;

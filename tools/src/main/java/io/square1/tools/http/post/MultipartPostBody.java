@@ -50,7 +50,7 @@ import java.util.Random;
 
     public void output(OutputStream outputStream) throws Exception {
 
-        try {
+      //  try {
 
             outputStream.write(NEW_LINE.getBytes());
 
@@ -68,9 +68,9 @@ import java.util.Random;
             outputStream.write("--".getBytes());
 
 
-        } catch (Exception e) {
+      //  } catch (Exception e) {
 
-        }
+     //   }
 
     }
 

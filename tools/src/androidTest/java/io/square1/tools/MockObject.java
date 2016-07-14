@@ -7,8 +7,8 @@ import org.json.JSONObject;
 import java.util.Date;
 
 import io.square1.tools.json.JsonDataUtils;
-import io.square1.tools.laravel.BaseObject;
-import io.square1.tools.laravel.DefaultJsonMapper;
+import io.square1.tools.json.BaseObject;
+import io.square1.tools.json.DefaultJsonMapper;
 import io.square1.tools.utils.DateUtils;
 
 /**

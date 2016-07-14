@@ -11,8 +11,8 @@ import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.Test;
 
-import io.square1.tools.laravel.DefaultJsonMapper;
-import io.square1.tools.laravel.Pagination;
+import io.square1.tools.json.DefaultJsonMapper;
+import io.square1.tools.json.Pagination;
 
 /**
  * Created by roberto on 14/07/2016.

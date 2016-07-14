@@ -1,4 +1,4 @@
-package io.square1.tools.laravel;
+package io.square1.tools.json;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -7,7 +7,6 @@ import org.json.JSONObject;
 
 import java.util.Date;
 
-import io.square1.tools.json.JsonDataUtils;
 import io.square1.tools.utils.DateUtils;
 
 /**

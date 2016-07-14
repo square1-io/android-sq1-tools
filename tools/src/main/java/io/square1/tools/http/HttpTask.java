@@ -24,6 +24,7 @@ import io.square1.tools.http.data.JSONArrayDataReader;
 import io.square1.tools.http.data.JSONDataReader;
 import io.square1.tools.http.post.MultipartElement;
 import io.square1.tools.http.post.MultipartPostBody;
+import io.square1.tools.http.put.PutBody;
 import io.square1.tools.utils.CleanupStack;
 import io.square1.tools.utils.StringUtils;
 
@@ -32,30 +33,6 @@ import io.square1.tools.utils.StringUtils;
  */
 public  class HttpTask<T> extends Task<T> {
 
-    public static  enum Method {
-        POST,
-        GET
-    }
-
-    private int mContentLenght;
-    private Uri mURL;
-    private DataReader<T> mDataReader;
-    private HttpRequestCacheProvider mCacheProvider;
-    private HashMap<String,String> mHeaders;
-
-    private MultipartPostBody mBody;
-    private byte[] mByteBody;
-
-    private Method mMethod;
-
-
-    HttpTask(Uri uri, DataReader reader, HttpRequestCacheProvider cache) {
-        super();
-        mURL = uri;
-        mDataReader = reader;
-        mCacheProvider = cache;
-
-    }
 
     public static class Builder {
 
@@ -63,9 +40,16 @@ public  class HttpTask<T> extends Task<T> {
         private HashMap<String,String> mInternalParams;
         private Uri.Builder mUriBuilder;
         private ProcessTaskDataHandler mHandler;
-        private ArrayList<MultipartElement> mMultipartElements;
+
         private HttpRequestCacheProvider mCacheProvider;
-        private HashMap<String,String> mBody;
+
+        //elements for a multipart body
+        private ArrayList<MultipartElement> mMultipartElements;
+        //elements for a url encoded post
+        private HashMap<String,String> mKeyValuesToSend;
+
+        // writer for the body of a PUT method, ignored if method is not PUT
+        private PutBody mPutBody;
 
         private final Method mMethod;
 
@@ -75,7 +59,7 @@ public  class HttpTask<T> extends Task<T> {
             mHeaders = new HashMap<>();
             mInternalParams = new HashMap<>();
             mUriBuilder = new Uri.Builder();
-            mBody = new HashMap();
+            mKeyValuesToSend = new HashMap();
         }
 
         public Builder(String url){
@@ -95,7 +79,8 @@ public  class HttpTask<T> extends Task<T> {
         }
 
         /**
-         * add an element for a multipart post
+         * add an element for a multipart post. setting one of this
+         * will automatically switch the method to POST / multipart
          * @param element
          * @return
          */
@@ -123,25 +108,50 @@ public  class HttpTask<T> extends Task<T> {
             return this;
         }
 
+        /**
+         * set a provider the body of a PUT request
+         * @param putBody
+         * @return
+         */
+        public Builder setPutBody(PutBody putBody) {
+            mPutBody = putBody;
+            return this;
+        }
+
+        /**
+         * Encodes the name and value and then appends the parameter to the
+         * query string.
+         *
+         * @param name which will be encoded
+         * @param value which will be encoded
+         */
+        public Builder appendQueryParameter(String name, String value) {
+
+            if(!TextUtils.isEmpty(value) && !TextUtils.isEmpty(name)  ) {
+                mUriBuilder.appendQueryParameter(name, value);
+                mInternalParams.put(name,value);
+            }
+            return this;
+        }
+
+        /**
+         *
+         * @param name
+         * @param value
+         * @return
+         */
         public Builder addParam(String name, String value) {
             if(!TextUtils.isEmpty(value) && !TextUtils.isEmpty(name)  ) {
-
-                if(mMethod == Method.GET) {
-                    mUriBuilder.appendQueryParameter(name, value);
-                }else{
-                    mBody.put(name,value);
+                    mKeyValuesToSend.put(name,value);
                 }
-
-                mInternalParams.put(name,value);
-
-            }
+            mInternalParams.put(name,value);
             return this;
         }
 
         public Builder addHeader(String name, String value) {
             if(TextUtils.isEmpty(name) == false &&
                     TextUtils.isEmpty(value) == false) {
-               mHeaders.put(name, value);
+                mHeaders.put(name, value);
             }
             return this;
         }
@@ -170,6 +180,14 @@ public  class HttpTask<T> extends Task<T> {
 
         public HttpTask build(DataReader reader){
 
+            //if it is a get we just append the keyValues to send as query parameters
+             if (mMethod == Method.GET){
+                for (Map.Entry<String,String> param : mKeyValuesToSend.entrySet()) {
+                    appendQueryParameter(param.getKey(),param.getValue());
+                }
+                 mKeyValuesToSend.clear();
+            }
+
             HttpTask task =  new HttpTask(mUriBuilder.build(),
                     reader,
                     mCacheProvider);
@@ -186,7 +204,10 @@ public  class HttpTask<T> extends Task<T> {
                 // otherwise we just post some data URL encoded
                 task.mByteBody = buildBody();
             }
-            //else if GET nothing to do
+            if(task.mMethod == Method.PUT){
+                //this is ignored if the method is not PUT
+                task.mPutBody = mPutBody;
+            }
 
             task.mHeaders = mHeaders;
 
@@ -199,13 +220,13 @@ public  class HttpTask<T> extends Task<T> {
 
         private byte[] buildBody(){
 
-            if(mBody == null || mBody.size() == 0){
+            if(mKeyValuesToSend == null || mKeyValuesToSend.size() == 0){
                 return null;
             }
 
             StringBuilder postData = new StringBuilder();
             try {
-                for (Map.Entry<String,String> param : mBody.entrySet()) {
+                for (Map.Entry<String,String> param : mKeyValuesToSend.entrySet()) {
 
                     if (postData.length() != 0) {
                         postData.append('&');
@@ -227,6 +248,31 @@ public  class HttpTask<T> extends Task<T> {
     }
 
 
+    public  enum Method {
+        POST,
+        GET,
+        PUT
+    }
+
+    private int mContentLenght;
+    private Uri mURL;
+    private DataReader<T> mDataReader;
+    private HttpRequestCacheProvider mCacheProvider;
+    private HashMap<String,String> mHeaders;
+
+    private MultipartPostBody mBody;
+    private byte[] mByteBody;
+    private PutBody mPutBody;
+    private Method mMethod;
+
+
+    HttpTask(Uri uri, DataReader reader, HttpRequestCacheProvider cache) {
+        super();
+        mURL = uri;
+        mDataReader = reader;
+        mCacheProvider = cache;
+
+    }
 
     @Override
     protected T executeTask() throws Exception {
@@ -262,14 +308,21 @@ public  class HttpTask<T> extends Task<T> {
                     String value = mHeaders.get(header);
                     urlConnection.setRequestProperty(header, value);
                 }
-
-                if(mBody != null){
+                if(mMethod == Method.PUT){
+                    if(mPutBody != null) {
+                        urlConnection.setDoOutput(true);
+                        OutputStream outputStream = urlConnection.getOutputStream();
+                        mPutBody.output(outputStream);
+                    }
+                }
+                else if(mBody != null){
                     //set content type
                     urlConnection.setRequestProperty("Content-Type", mBody.getBodyContentType());
                     urlConnection.setDoOutput(true);
                     OutputStream outputStream = urlConnection.getOutputStream();
                     mBody.output(outputStream);
-                }else if (mByteBody != null){
+                }
+                else if (mByteBody != null){
                     urlConnection.setDoOutput(true);
                     urlConnection.getOutputStream().write(mByteBody);
                 }

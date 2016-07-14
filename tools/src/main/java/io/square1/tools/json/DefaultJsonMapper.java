@@ -1,4 +1,4 @@
-package io.square1.tools.laravel;
+package io.square1.tools.json;
 
 import android.os.Parcel;
 

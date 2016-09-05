@@ -1,10 +1,45 @@
 package io.square1.tools.json;
 
+import android.content.Intent;
 import android.text.TextUtils;
 
 import org.json.JSONObject;
 
 public class JsonDataUtils {
+
+
+    public static Double getDouble(JSONObject object,
+                                   final String paramName,
+                                   Double fallBack){
+
+        try {
+            return object.getDouble(paramName);
+        }catch (Exception e){
+            return fallBack;
+        }
+    }
+
+    public static Integer getInteger(JSONObject object,
+                                    final String paramName,
+                                    Integer fallBack){
+
+        try {
+            return object.getInt(paramName);
+        }catch (Exception e){
+            return fallBack;
+        }
+    }
+
+    public static Long getLong(JSONObject object,
+                                     final String paramName,
+                                     Long fallBack){
+
+        try {
+            return object.getLong(paramName);
+        }catch (Exception e){
+            return fallBack;
+        }
+    }
 
     /**
      * returns a non null string for the give parameter

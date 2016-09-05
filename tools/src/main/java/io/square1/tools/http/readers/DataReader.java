@@ -1,4 +1,4 @@
-package io.square1.tools.http.data;
+package io.square1.tools.http.readers;
 
 import java.io.InputStream;
 

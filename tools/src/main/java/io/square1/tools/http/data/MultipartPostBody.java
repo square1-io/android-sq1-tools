@@ -1,4 +1,4 @@
-package io.square1.tools.http.post;
+package io.square1.tools.http.data;
 
 import android.text.TextUtils;
 
@@ -8,11 +8,15 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Random;
 
+import io.square1.tools.http.data.element.ByteFileElement;
+import io.square1.tools.http.data.element.MultipartElement;
+import io.square1.tools.http.data.element.StringElement;
+
 
 /**
  * Created by roberto on 27/04/2016.
  */
- public class MultipartPostBody {
+ public class MultipartPostBody implements DataBody{
 
     public  final static String NEW_LINE = "\r\n";
     public  final static String FORMAT_ELEMENT_HEADER = "Content-Disposition: form-data; name=\"%s\"\r\n\r\n";
@@ -48,6 +52,7 @@ import java.util.Random;
 
 
 
+    @Override
     public void output(OutputStream outputStream) throws Exception {
 
       //  try {
@@ -74,6 +79,7 @@ import java.util.Random;
 
     }
 
+    @Override
     public String getBodyContentType() {
 
         final StringBuilder buffer = new StringBuilder();

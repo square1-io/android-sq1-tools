@@ -1,7 +1,5 @@
 package io.square1.testapp;
 
-import android.content.Intent;
-import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -135,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements TaskObserver {
                 .appendPath("1")
                 .buildAsJSON();
 
-        mQueue.addTask(jsonObjectHttpTask, this);
+        mQueue.addTask(jsonObjectHttpTask, 2, this);
     }
 
     @Override
@@ -177,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements TaskObserver {
             mProgressTextView.setText(task.getId() + " Finish");
         }else {
             BlockingTask currentTask = (BlockingTask)task;
-            mBlockingTextView.setText(currentTask.getResult());
+            mBlockingTextView.setText(currentTask.getRawData());
         }
     }
 

@@ -2,6 +2,7 @@ package io.square1.tools;
 
 import android.os.Parcel;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Date;
@@ -56,13 +57,18 @@ public class MockObject extends BaseObject {
     }
 
     @Override
+    protected void serialize(JSONObject object) throws JSONException {
+
+    }
+
+    @Override
     public int describeContents() {
         return 0;
     }
 
+
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        super.writeToParcel(dest, flags);
+    public void addValuesToParcel(Parcel dest, int flags) {
         dest.writeString(this.mField1);
         dest.writeString(this.mField2);
         dest.writeLong(this.mDate != null ? this.mDate.getTime() : -1);

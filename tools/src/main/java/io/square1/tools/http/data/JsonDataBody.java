@@ -1,5 +1,6 @@
-package io.square1.tools.http.put;
+package io.square1.tools.http.data;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -8,12 +9,21 @@ import java.io.OutputStream;
 /**
  * Created by roberto on 14/07/2016.
  */
-public class JsonPutBody implements PutBody {
+public class JsonDataBody implements DataBody {
 
-    private  JSONObject mObject;
+    private  Object mObject;
 
-    public JsonPutBody(JSONObject object){
+    public JsonDataBody(JSONObject object){
         mObject = object;
+    }
+
+    public JsonDataBody(JSONArray object){
+        mObject = object;
+    }
+
+    @Override
+    public String getBodyContentType() {
+        return "application/json";
     }
 
     @Override

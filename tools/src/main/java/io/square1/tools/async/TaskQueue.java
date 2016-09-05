@@ -41,26 +41,34 @@ public class TaskQueue {
         mStartCount = 100;
     }
 
-     public <T> T runSyncTask(Task<T> task, Bundle args ){
+     public <T> T runSyncTask(Task<T> task, int tag, Bundle args ){
 
          if(task == null){
              return null;
          }
          mStartCount ++;
          final int id = mStartCount;
-         task.assignTaskToQueue( mApplicationContext, this, mStartCount, args);
+         task.assignTaskToQueue( mApplicationContext, this, mStartCount, tag, args);
          return task.runImplementation();
     }
 
-    public int addTask(Task task, TaskObserver observer){
-       return addTask(task,  observer, null, false);
+    /**
+     *
+     * @param task
+     * @param tag a tag to identify this task among others, useful if same observer
+     *            used for multiple tasks
+     * @param observer
+     * @return
+     */
+    public int addTask(Task task, int tag, TaskObserver observer){
+       return addTask(task, tag, observer, null, false);
     }
-    public int addTask(Task task){
-        return addTask(task, null, null, false);
+    public int addTask(Task task, int tag){
+        return addTask(task, tag, null, null,  false);
     }
 
-    public int addTask(Task task, Bundle args){
-        return addTask(task, null,args, false);
+    public int addTask(Task task, int tag, Bundle args){
+        return addTask(task, tag, null,args, false);
     }
 
 
@@ -73,7 +81,7 @@ public class TaskQueue {
      *                     wait for this task to complete before execuring their code.
      * @return the unique id of this task in the queue
      */
-    public int addTask(final Task task,  TaskObserver observer, Bundle args, boolean blockingTask){
+    public int addTask(final Task task, int tag, TaskObserver observer, Bundle args, boolean blockingTask){
 
         if(task == null){
             return -1;
@@ -91,7 +99,7 @@ public class TaskQueue {
 
         mStartCount ++;
         //this will setup the task id too , so call before using the taskId
-        task.assignTaskToQueue( mApplicationContext, this, mStartCount, args);
+        task.assignTaskToQueue( mApplicationContext, this, mStartCount, tag, args);
 
         final int taskId = task.getId();
 

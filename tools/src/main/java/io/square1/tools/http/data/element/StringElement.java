@@ -1,7 +1,9 @@
-package io.square1.tools.http.post;
+package io.square1.tools.http.data.element;
 
 import java.io.IOException;
 import java.io.OutputStream;
+
+import io.square1.tools.http.data.MultipartPostBody;
 
 public class StringElement implements MultipartElement {
 

@@ -10,21 +10,22 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 
 import io.square1.tools.async.ProcessTaskDataHandler;
 import io.square1.tools.async.Task;
-import io.square1.tools.http.data.DataReader;
-import io.square1.tools.http.data.JSONArrayDataReader;
-import io.square1.tools.http.data.JSONDataReader;
-import io.square1.tools.http.post.MultipartElement;
-import io.square1.tools.http.post.MultipartPostBody;
-import io.square1.tools.http.put.PutBody;
+import io.square1.tools.http.data.DataBody;
+import io.square1.tools.http.data.UrlEncodeDataBody;
+import io.square1.tools.http.readers.DataReader;
+import io.square1.tools.http.readers.JSONArrayDataReader;
+import io.square1.tools.http.readers.JSONDataReader;
+import io.square1.tools.http.data.element.MultipartElement;
+import io.square1.tools.http.data.MultipartPostBody;
 import io.square1.tools.utils.CleanupStack;
 import io.square1.tools.utils.StringUtils;
 
@@ -49,7 +50,7 @@ public  class HttpTask<T> extends Task<T> {
         private HashMap<String,String> mKeyValuesToSend;
 
         // writer for the body of a PUT method, ignored if method is not PUT
-        private PutBody mPutBody;
+        private DataBody mDataBody;
 
         private final Method mMethod;
 
@@ -110,11 +111,11 @@ public  class HttpTask<T> extends Task<T> {
 
         /**
          * set a provider the body of a PUT request
-         * @param putBody
+         * @param dataBody
          * @return
          */
-        public Builder setPutBody(PutBody putBody) {
-            mPutBody = putBody;
+        public Builder setPutBody(DataBody dataBody) {
+            mDataBody = dataBody;
             return this;
         }
 
@@ -185,6 +186,7 @@ public  class HttpTask<T> extends Task<T> {
                 for (Map.Entry<String,String> param : mKeyValuesToSend.entrySet()) {
                     appendQueryParameter(param.getKey(),param.getValue());
                 }
+                 //remove all
                  mKeyValuesToSend.clear();
             }
 
@@ -198,15 +200,15 @@ public  class HttpTask<T> extends Task<T> {
             if(mMultipartElements != null &&
                     mMultipartElements.isEmpty() == false){
                 task.mMethod = Method.POST;
-                task.mBody = new MultipartPostBody(mMultipartElements);
+                task.mDataBody = new MultipartPostBody(mMultipartElements);
 
             }else if(task.mMethod == Method.POST){
                 // otherwise we just post some data URL encoded
-                task.mByteBody = buildBody();
+                task.mDataBody = new UrlEncodeDataBody(mKeyValuesToSend);
             }
             if(task.mMethod == Method.PUT){
                 //this is ignored if the method is not PUT
-                task.mPutBody = mPutBody;
+                task.mDataBody = mDataBody;
             }
 
             task.mHeaders = mHeaders;
@@ -217,41 +219,17 @@ public  class HttpTask<T> extends Task<T> {
             task.setDataHandler(mHandler);
             return task;
         }
-
-        private byte[] buildBody(){
-
-            if(mKeyValuesToSend == null || mKeyValuesToSend.size() == 0){
-                return null;
-            }
-
-            StringBuilder postData = new StringBuilder();
-            try {
-                for (Map.Entry<String,String> param : mKeyValuesToSend.entrySet()) {
-
-                    if (postData.length() != 0) {
-                        postData.append('&');
-                    }
-                    postData.append(URLEncoder.encode(param.getKey(), "UTF-8"));
-                    postData.append('=');
-                    postData.append(URLEncoder.encode(String.valueOf(param.getValue()), "UTF-8"));
-                }
-
-                return postData.toString().getBytes("UTF-8");
-            }catch (Exception exc){
-
-            }
-
-            return null;
-
-        }
-
-    }
+  }
 
 
     public  enum Method {
         POST,
         GET,
-        PUT
+        PUT,
+        HEAD,
+        DELETE,
+        OPTIONS,
+        TRACE
     }
 
     private int mContentLenght;
@@ -259,11 +237,11 @@ public  class HttpTask<T> extends Task<T> {
     private DataReader<T> mDataReader;
     private HttpRequestCacheProvider mCacheProvider;
     private HashMap<String,String> mHeaders;
-
-    private MultipartPostBody mBody;
-    private byte[] mByteBody;
-    private PutBody mPutBody;
+    private DataBody mDataBody;
     private Method mMethod;
+
+    private Map<String, List<String>> mResponseHeaders;
+    private int mHttpResponseCode;
 
 
     HttpTask(Uri uri, DataReader reader, HttpRequestCacheProvider cache) {
@@ -271,6 +249,7 @@ public  class HttpTask<T> extends Task<T> {
         mURL = uri;
         mDataReader = reader;
         mCacheProvider = cache;
+        mHttpResponseCode = -1;
 
     }
 
@@ -299,6 +278,7 @@ public  class HttpTask<T> extends Task<T> {
             }
 
             if(dataFromCache == false) {
+
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod(mMethod.name());
 
@@ -308,23 +288,16 @@ public  class HttpTask<T> extends Task<T> {
                     String value = mHeaders.get(header);
                     urlConnection.setRequestProperty(header, value);
                 }
-                if(mMethod == Method.PUT){
-                    if(mPutBody != null) {
-                        urlConnection.setDoOutput(true);
-                        OutputStream outputStream = urlConnection.getOutputStream();
-                        mPutBody.output(outputStream);
+
+                if(mDataBody != null){
+
+                    String contentType = mDataBody.getBodyContentType();
+                    if(TextUtils.isEmpty(contentType) == false) {
+                        urlConnection.setRequestProperty("Content-Type", contentType);
                     }
-                }
-                else if(mBody != null){
-                    //set content type
-                    urlConnection.setRequestProperty("Content-Type", mBody.getBodyContentType());
                     urlConnection.setDoOutput(true);
-                    OutputStream outputStream = urlConnection.getOutputStream();
-                    mBody.output(outputStream);
-                }
-                else if (mByteBody != null){
-                    urlConnection.setDoOutput(true);
-                    urlConnection.getOutputStream().write(mByteBody);
+                    OutputStream outputStream = cleanupStack.add(urlConnection.getOutputStream());
+                    mDataBody.output(outputStream);
                 }
 
                 mContentLenght = urlConnection.getContentLength();
@@ -336,6 +309,8 @@ public  class HttpTask<T> extends Task<T> {
                 }else{
                     in = urlConnection.getInputStream();
                 }
+                mHttpResponseCode = urlConnection.getResponseCode();
+                mResponseHeaders = urlConnection.getHeaderFields();
                 result = parseIncomingData(cleanupStack.add(new BufferedInputStream(in)));
             }
 
@@ -356,6 +331,14 @@ public  class HttpTask<T> extends Task<T> {
     @Override
     public String toString() {
        return StringUtils.maxLengthString(mURL.getPath()+"?"+mURL.getQuery(), 40);
+    }
+
+    public final int getResponseCode(){
+        return mHttpResponseCode;
+    }
+
+    public final Map<String, List<String>> getResponseHeaders(){
+        return mResponseHeaders;
     }
 
     public String getURL(){

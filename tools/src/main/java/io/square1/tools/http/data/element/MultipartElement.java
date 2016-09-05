@@ -1,4 +1,4 @@
-package io.square1.tools.http.post;
+package io.square1.tools.http.data.element;
 
 import java.io.IOException;
 import java.io.OutputStream;

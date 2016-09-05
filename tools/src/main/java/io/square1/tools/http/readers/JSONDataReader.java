@@ -1,6 +1,6 @@
-package io.square1.tools.http.data;
+package io.square1.tools.http.readers;
 
-import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -9,10 +9,10 @@ import java.io.InputStreamReader;
 /**
  * Created by roberto on 13/11/14.
  */
-public class JSONArrayDataReader implements DataReader<JSONArray> {
+public class JSONDataReader implements DataReader<JSONObject> {
 
     @Override
-    public JSONArray readData(InputStream in) throws Exception {
+    public JSONObject readData(InputStream in) throws Exception {
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(in));
         StringBuilder builder = new StringBuilder();
@@ -22,6 +22,6 @@ public class JSONArrayDataReader implements DataReader<JSONArray> {
             builder.append(line);
         }
 
-        return new JSONArray(builder.toString());
+        return new JSONObject(builder.toString());
     }
 }

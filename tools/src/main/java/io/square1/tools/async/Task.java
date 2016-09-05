@@ -23,21 +23,9 @@ public abstract class Task<T> implements Runnable {
     private static final String ARG_CACHE_ID = "TASK_CACHE_ID";
     private static final String ARG_ID = "TASK_ARG_ID";
     private static final String ARG_RESULT_CODE = "TASK_ARG_RESULT_CODE";
-    private static final String ARG_DATA = "TASK_ARG_DATA";
 
 
-    public static int taskId(Bundle bundle){
-        return bundle.getInt(ARG_ID);
-    }
 
-    public static int taskParam(Bundle bundle, String name){
-        String value = bundle.getString(name);
-        return Integer.valueOf(value);
-    }
-
-    public static Parcelable taskData(Bundle bundle){
-        return bundle.getParcelable(ARG_DATA);
-    }
 
     public static final int STATE_WAITING = 0;
     public static final int STATE_STARTED = 1;
@@ -51,8 +39,10 @@ public abstract class Task<T> implements Runnable {
     private long mEndTimeStamp;
 
     private Bundle mParams;
+    private int mTag;
+    private T mRawData;
+    private Parcelable mResult;
 
-    private T mResult;
     private ProcessTaskDataHandler mDataHandler;
     private Thread mCurrentThread;
 
@@ -63,6 +53,7 @@ public abstract class Task<T> implements Runnable {
     private AtomicBoolean mCanceled = new AtomicBoolean(false);
 
    public Task(){
+       mTag = -1;
        mParams = new Bundle();
     }
 
@@ -80,16 +71,13 @@ public abstract class Task<T> implements Runnable {
        return mParams.getInt(ARG_RESULT_CODE, RESULT_OK);
     }
 
-    protected void setData(Parcelable data){
-        mParams.putParcelable(ARG_DATA,data);
-    }
 
-
-    void assignTaskToQueue(Context ctx, TaskQueue queue, int taskId, Bundle params){
+    void assignTaskToQueue(Context ctx, TaskQueue queue, int taskId, int tag,  Bundle params){
 
         mApplicationContext = ctx;
         mCurrentQueue = queue;
         mTaskId = taskId;
+        mTag = tag;
 
         addBundle(params);
 
@@ -125,22 +113,18 @@ public abstract class Task<T> implements Runnable {
 
     private void handleStateFinished(){
 
-        if(mResult != null &&
+        if(mRawData != null &&
                 mDataHandler != null){
 
             // some data here , see if we can do some processing on it
             try{
 
                 final long startProcessing  = System.currentTimeMillis();
-                Parcelable bundle = mDataHandler.processReceivedData(mApplicationContext, mResult, mCanceled);
+                mResult = mDataHandler.processReceivedData(mApplicationContext, mRawData, mCanceled);
                 long endProcessing = System.currentTimeMillis();
 
-                if (bundle != null) {
-                    mParams.putParcelable(ARG_DATA, bundle);
-                }
-
                 if(DEBUG){
-                    Log.d("API", String.format(" %s - processing Time %d",
+                    Log.d("API", String.format(" %s - processing Time %f",
                             this.toString(),
                             (endProcessing - startProcessing)/1000f));
                 }
@@ -151,11 +135,11 @@ public abstract class Task<T> implements Runnable {
         }
 
         //call on finish , subclasses of task will handle it
-        onFinish(mResult);
+        onFinish(mRawData);
 
         //when we get here we have either
         // got a result for the task and processed it correctly
-        // or we failed getting a mResult or something went wrong in processing the data
+        // or we failed getting a mRawData or something went wrong in processing the data
         if(mLastException != null) {
             setResultCode(RESULT_FAILED);
             mCurrentQueue.taskStateUpdated(this);
@@ -234,16 +218,16 @@ public abstract class Task<T> implements Runnable {
         updateState(STATE_STARTED);
 
         try {
-            mResult = executeTask();
+            mRawData = executeTask();
         }catch (Exception exc){
             mLastException = exc;
         }
         //we always expect a non null result
-        if(mResult == null && mLastException == null){
+        if(mRawData == null && mLastException == null){
             mLastException = new TaskException(this);
         }
         updateState(STATE_FINISHED);
-        return mResult;
+        return mRawData;
     }
 
     public final T runSync(Context ctx){
@@ -261,10 +245,17 @@ public abstract class Task<T> implements Runnable {
                 tmp.length()  ) ;
     }
 
-    public T getResult(){
+    public T getRawData(){
+        return mRawData;
+    }
+
+    public Parcelable getResult(){
         return mResult;
     }
 
+    public int getTag(){
+        return mTag;
+    }
 
     public Bundle getBundle(){
         return mParams;

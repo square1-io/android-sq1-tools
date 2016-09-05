@@ -2,6 +2,8 @@ package io.square1.tools.json;
 
 import android.os.Parcelable;
 
+import org.json.JSONObject;
+
 /**
  * Created by roberto on 14/07/2016.
  */
@@ -35,5 +37,13 @@ public interface JsonMapper extends Parcelable {
      * @return the field name.
      */
       String getJsonFieldForPaginationPages();
+
+
+    /**
+     * return true if the json has a valid pagination object
+     * @param object
+     * @return true / false
+     */
+    boolean hasValidPagination(JSONObject object);
 
 }

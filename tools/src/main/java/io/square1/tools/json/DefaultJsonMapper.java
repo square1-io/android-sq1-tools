@@ -2,6 +2,8 @@ package io.square1.tools.json;
 
 import android.os.Parcel;
 
+import org.json.JSONObject;
+
 import io.square1.tools.utils.DateUtils;
 
 /**
@@ -38,6 +40,16 @@ public class DefaultJsonMapper implements JsonMapper {
     @Override
     public String getJsonFieldForPaginationPages() {
         return "pages";
+    }
+
+    @Override
+    public boolean hasValidPagination(JSONObject object){
+
+        if(object == null) return false;
+
+        if(object.has(getJsonFieldForPaginationCurrentPage()) == true) return true;
+
+        return false;
     }
 
     @Override

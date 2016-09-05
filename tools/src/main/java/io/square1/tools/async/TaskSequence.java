@@ -22,8 +22,8 @@ public abstract class TaskSequence<T> extends Task<T> {
         }
 
         if(t != null) {
-            Parcelable p = Task.taskData(t.getBundle());
-            setData(p);
+            Parcelable p = t.getResult();
+           // setData(p);
         }
 
         return  result;
